@@ -1,0 +1,35 @@
+"""Api target sink class, which handles writing streams."""
+
+from __future__ import annotations
+from pydantic import BaseModel
+
+from target_hotglue.auth import ApiAuthenticator
+from target_hotglue.client import HotglueSink
+
+
+class ApiSink(HotglueSink):
+    name = "api"
+
+    @property
+    def authenticator(self):
+        return ApiAuthenticator(self._target)
+
+    @property
+    def base_url(self) -> str:
+        return self._config["url"].format(stream=self.stream_name)
+
+    @property
+    def endpoint(self) -> str:
+        return ""
+
+    @property
+    def unified_schema(self) -> BaseModel:
+        return None
+
+    def preprocess_record(self, record: dict, context: dict) -> dict:
+        pass
+
+    def upsert_record(self, record: dict, context: dict):
+        response = self.request_api(self._config["method"].upper(), request_data=record)
+        id = response.json().get("id")
+        return id, response.ok, dict()
