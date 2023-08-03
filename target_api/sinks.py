@@ -12,7 +12,14 @@ class ApiSink(HotglueSink):
 
     @property
     def authenticator(self):
-        return ApiAuthenticator(self._target)
+        return (
+            ApiAuthenticator(
+                self._target,
+                header_name=self._config.get("api_key_header") or "x-api-key"
+            )
+            if self._config.get("auth", False)
+            else None
+        )
 
     @property
     def base_url(self) -> str:
