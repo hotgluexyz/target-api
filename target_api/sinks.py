@@ -37,6 +37,6 @@ class ApiSink(HotglueSink):
         pass
 
     def upsert_record(self, record: dict, context: dict):
-        response = self.request_api(self._config["method"].upper(), request_data=record)
+        response = self.request_api(self._config.get("method", "POST").upper(), request_data=record)
         id = response.json().get("id")
         return id, response.ok, dict()
