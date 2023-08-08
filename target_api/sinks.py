@@ -34,7 +34,7 @@ class ApiSink(HotglueSink):
         return None
 
     def preprocess_record(self, record: dict, context: dict) -> dict:
-        pass
+        return record
 
     def upsert_record(self, record: dict, context: dict):
         response = self.request_api(self._config.get("method", "POST").upper(), request_data=record)
