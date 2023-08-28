@@ -1,5 +1,5 @@
 """Api target sink class, which handles writing streams."""
-
+import json
 from __future__ import annotations
 from pydantic import BaseModel
 
@@ -35,7 +35,10 @@ class ApiSink(HotglueSink):
 
     def preprocess_record(self, record: dict, context: dict) -> dict:
         if self.config.get("metadata", None):
-            record["metadata"] = self.config.get("metadata")
+            try:
+                record["metadata"] = json.loads(self.config.get("metadata"))
+            except:
+                record["metadata"] = self.config.get("metadata")
         return record
 
     def upsert_record(self, record: dict, context: dict):
