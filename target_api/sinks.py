@@ -1,6 +1,7 @@
 """Api target sink class, which handles writing streams."""
-import json
 from __future__ import annotations
+
+import json
 from pydantic import BaseModel
 
 from target_hotglue.auth import ApiAuthenticator
