@@ -34,6 +34,8 @@ class ApiSink(HotglueSink):
         return None
 
     def preprocess_record(self, record: dict, context: dict) -> dict:
+        if self.config.get("metadata", None):
+            record["metadata"] = self.config.get("metadata")
         return record
 
     def upsert_record(self, record: dict, context: dict):
