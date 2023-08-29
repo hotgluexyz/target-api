@@ -9,7 +9,9 @@ from target_hotglue.client import HotglueSink
 
 
 class ApiSink(HotglueSink):
-    name = "api"
+    @property
+    def name(self):
+        return self.stream_name
 
     @property
     def authenticator(self):
