@@ -46,5 +46,14 @@ class ApiSink(HotglueSink):
 
     def upsert_record(self, record: dict, context: dict):
         response = self.request_api(self._config.get("method", "POST").upper(), request_data=record)
-        id = response.json().get("id")
+
+        self.logger.info(f"Response: {response.status_code} - {response.text}")
+
+        id = None
+
+        try:
+            id = response.json().get("id")
+        except Exception as e:
+            self.logger.warning(f"Unable to get response's id: {e}")
+
         return id, response.ok, dict()
