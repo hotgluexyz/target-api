@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import os
 from pydantic import BaseModel
 
 from target_hotglue.auth import ApiAuthenticator
@@ -26,7 +27,16 @@ class ApiSink(HotglueSink):
 
     @property
     def base_url(self) -> str:
-        return self._config["url"].format(stream=self.stream_name)
+        tenant_id = os.environ.get("TENANT")
+        flow_id = os.environ.get("FLOW")
+
+        return self._config["url"].format(
+            stream=self.stream_name,
+            tenant=tenant_id,
+            tenant_id=tenant_id,
+            flow=flow_id,
+            flow_id=flow_id
+        )
 
     @property
     def endpoint(self) -> str:
