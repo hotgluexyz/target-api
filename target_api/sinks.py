@@ -102,7 +102,6 @@ class ApiSink(HotglueSink):
             params=params,
             headers=headers,
             data=data,
-            auth = ("PRECORO", "Sage2023!")
         )
         self.validate_response(response)
         return response
