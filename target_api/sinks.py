@@ -7,6 +7,10 @@ from pydantic import BaseModel
 
 from target_hotglue.auth import ApiAuthenticator
 from target_hotglue.client import HotglueSink
+import backoff
+import requests
+from singer_sdk.exceptions import RetriableAPIError
+from target_hotglue.common import HGJSONEncoder
 
 
 class ApiSink(HotglueSink):
@@ -71,3 +75,33 @@ class ApiSink(HotglueSink):
             self.logger.warning(f"Unable to get response's id: {e}")
 
         return id, response.ok, dict()
+    
+    @backoff.on_exception(
+    backoff.expo,
+    (RetriableAPIError, requests.exceptions.ReadTimeout),
+    max_tries=10,
+    factor=2,
+    )
+    def _request(
+        self, http_method, endpoint, params={}, request_data=None, headers={}
+    ) -> requests.PreparedRequest:
+        """Prepare a request object."""
+        url = self.url(endpoint)
+        headers.update(self.default_headers)
+        headers.update({"Content-Type": "application/json"})
+        params.update(self.params)
+        data = (
+            json.dumps(request_data, cls=HGJSONEncoder)
+            if request_data
+            else None
+        )
+
+        response = requests.request(
+            method=http_method,
+            url=url,
+            params=params,
+            headers=headers,
+            data=data,
+        )
+        self.validate_response(response)
+        return response
