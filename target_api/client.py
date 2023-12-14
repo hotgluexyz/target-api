@@ -27,6 +27,8 @@ class ApiSink(HotglueBaseSink):
     def base_url(self) -> str:
         tenant_id = os.environ.get("TENANT")
         flow_id = os.environ.get("FLOW")
+        tap = os.environ.get('TAP', None)
+        connector_id = os.environ.get('CONNECTOR_ID', None)
 
         return self._config["url"].format(
             stream=self.stream_name,
@@ -34,6 +36,8 @@ class ApiSink(HotglueBaseSink):
             tenant_id=tenant_id,
             flow=flow_id,
             flow_id=flow_id,
+            tap=tap,
+            connector_id=connector_id
         )
 
     @property
