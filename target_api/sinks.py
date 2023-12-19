@@ -43,7 +43,7 @@ class BatchSink(ApiSink, HotglueBatchSink):
     @property
     def max_size(self):
         if self.config.get("process_as_batch"):
-            return self.config.get("batch_size", 1)
+            return int(self.config.get("batch_size", 1))
 
     def process_batch_record(self, record: dict, index: int) -> dict:
         if self.config.get("metadata", None):
