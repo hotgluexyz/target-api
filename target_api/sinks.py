@@ -11,6 +11,9 @@ from target_api.client import ApiSink
 
 class RecordSink(ApiSink, HotglueSink):
     def preprocess_record(self, record: dict, context: dict) -> dict:
+        if self.config.get("add_stream_key"):
+            record["stream"] = self.stream_name
+
         if self.config.get("metadata", None):
             metadata = record.get("metadata") or {}
 
@@ -46,6 +49,9 @@ class BatchSink(ApiSink, HotglueBatchSink):
             return int(self.config.get("batch_size", 1))
 
     def process_batch_record(self, record: dict, index: int) -> dict:
+        if self.config.get("add_stream_key"):
+            record["stream"] = self.stream_name
+            
         if self.config.get("metadata", None):
             metadata = record.get("metadata") or {}
 
