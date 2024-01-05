@@ -5,6 +5,8 @@ import os
 from pydantic import BaseModel
 from target_hotglue.auth import ApiAuthenticator
 from target_hotglue.client import HotglueBaseSink
+import requests
+from singer_sdk.exceptions import FatalAPIError, RetriableAPIError
 
 
 class ApiSink(HotglueBaseSink):
@@ -47,3 +49,17 @@ class ApiSink(HotglueBaseSink):
     @property
     def unified_schema(self) -> BaseModel:
         return None
+    
+    def validate_response(self, response: requests.Response) -> None:
+        """Validate HTTP response."""
+        if response.status_code in [429] or 500 <= response.status_code < 600:
+            msg = self.response_error_message(response)
+            error = {"status_code": response.status_code, "body":response.text}
+            raise RetriableAPIError(error)
+        elif 400 <= response.status_code < 500:
+            try:
+                msg = response.text
+            except:
+                msg = self.response_error_message(response)
+            error = {"status_code": response.status_code, "body":msg}
+            raise FatalAPIError(error)
