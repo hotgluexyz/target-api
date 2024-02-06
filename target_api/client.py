@@ -21,7 +21,7 @@ class ApiSink(HotglueBaseSink):
                 self._target,
                 header_name=self._config.get("api_key_header") or "x-api-key",
             )
-            if self._config.get("auth", False)
+            if self._config.get("auth", False) or self._config.get("api_key_url")
             else None
         )
 
@@ -32,7 +32,7 @@ class ApiSink(HotglueBaseSink):
         tap = os.environ.get('TAP', None)
         connector_id = os.environ.get('CONNECTOR_ID', None)
 
-        return self._config["url"].format(
+        base_url = self._config["url"].format(
             stream=self.stream_name,
             tenant=tenant_id,
             tenant_id=tenant_id,
@@ -41,6 +41,11 @@ class ApiSink(HotglueBaseSink):
             tap=tap,
             connector_id=connector_id
         )
+
+        if self._config.get("api_key_url"):
+            base_url += f"?{self._config.get('api_key_header')}={self._config.get('api_key')}"
+
+        return base_url
 
     @property
     def endpoint(self) -> str:
