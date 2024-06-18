@@ -29,8 +29,8 @@ class ApiSink(HotglueBaseSink):
     def base_url(self) -> str:
         tenant_id = os.environ.get("TENANT")
         flow_id = os.environ.get("FLOW")
-        tap = os.environ.get('TAP', None)
-        connector_id = os.environ.get('CONNECTOR_ID', None)
+        tap = os.environ.get("TAP", None)
+        connector_id = os.environ.get("CONNECTOR_ID", None)
 
         base_url = self._config["url"].format(
             stream=self.stream_name,
@@ -39,11 +39,13 @@ class ApiSink(HotglueBaseSink):
             flow=flow_id,
             flow_id=flow_id,
             tap=tap,
-            connector_id=connector_id
+            connector_id=connector_id,
         )
 
         if self._config.get("api_key_url"):
-            base_url += f"?{self._config.get('api_key_header')}={self._config.get('api_key')}"
+            base_url += (
+                f"?{self._config.get('api_key_header')}={self._config.get('api_key')}"
+            )
 
         return base_url
 
@@ -54,17 +56,21 @@ class ApiSink(HotglueBaseSink):
     @property
     def unified_schema(self) -> BaseModel:
         return None
-    
+
+    def response_error_message(self, response: requests.Response) -> str:
+        try:
+            response_text = f" with response body: {response.text}"
+        except:
+            response_text = None
+        return f"Status code: {response.status_code} with {response.reason} for path: {response.request.url} with response body: {response_text}"
+
     def validate_response(self, response: requests.Response) -> None:
         """Validate HTTP response."""
         if response.status_code in [429] or 500 <= response.status_code < 600:
             msg = self.response_error_message(response)
-            error = {"status_code": response.status_code, "body":response.text}
+            error = {"status_code": response.status_code, "body": response.text}
             raise RetriableAPIError(error)
         elif 400 <= response.status_code < 500:
-            try:
-                msg = response.text
-            except:
-                msg = self.response_error_message(response)
-            error = {"status_code": response.status_code, "body":msg}
+            msg = self.response_error_message(response)
+            error = {"status_code": response.status_code, "body": msg}
             raise FatalAPIError(error)
