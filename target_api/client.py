@@ -62,7 +62,7 @@ class ApiSink(HotglueBaseSink):
             response_text = f" with response body: {response.text}"
         except:
             response_text = None
-        return f"Status code: {response.status_code} with {response.reason} for path: {response.request.url} with response body: {response_text}"
+        return f"Status code: {response.status_code} with {response.reason} for path: {response.request.url} {response_text}"
 
     def validate_response(self, response: requests.Response) -> None:
         """Validate HTTP response."""
