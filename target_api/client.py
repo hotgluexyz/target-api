@@ -7,6 +7,7 @@ from target_hotglue.auth import ApiAuthenticator
 from target_hotglue.client import HotglueBaseSink
 import requests
 from singer_sdk.exceptions import FatalAPIError, RetriableAPIError
+from curlify import to_curl
 
 
 class ApiSink(HotglueBaseSink):
@@ -59,18 +60,24 @@ class ApiSink(HotglueBaseSink):
 
     def response_error_message(self, response: requests.Response) -> str:
         try:
-            response_text = f" with response body: {response.text}"
+            response_text = f" with response body: '{response.text}'"
         except:
             response_text = None
         return f"Status code: {response.status_code} with {response.reason} for path: {response.request.url} {response_text}"
+    
+    def curlify_on_error(self, response):
+        curl = to_curl(response.request)
+        return curl
 
     def validate_response(self, response: requests.Response) -> None:
         """Validate HTTP response."""
         if response.status_code in [429] or 500 <= response.status_code < 600:
             msg = self.response_error_message(response)
-            error = {"status_code": response.status_code, "body": msg}
+            curl = self.curlify_on_error(response)
+            error = {"status_code": response.status_code, "body": msg, "curl": curl}
             raise RetriableAPIError(error)
         elif 400 <= response.status_code < 500:
             msg = self.response_error_message(response)
-            error = {"status_code": response.status_code, "body": msg}
+            curl = self.curlify_on_error(response)
+            error = {"status_code": response.status_code, "body": msg, "curl":curl}
             raise FatalAPIError(error)

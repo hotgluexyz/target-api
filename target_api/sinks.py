@@ -85,3 +85,19 @@ class BatchSink(ApiSink, HotglueBatchSink):
             self.logger.warning(f"Unable to get response's id: {e}")
 
         return id, response.ok, dict()
+
+    def process_batch(self, context: dict) -> None:
+        if not self.latest_state:
+            self.init_state()
+
+        raw_records = context["records"]
+
+        records = list(map(lambda e: self.process_batch_record(e[1], e[0]), enumerate(raw_records)))
+
+        try:
+            response = self.make_batch_request(records)
+            result = self.handle_batch_response(response)
+            for state in result.get("state_updates", list()):
+                self.update_state(state)
+        except Exception as e:
+            self.update_state({"error": str(e)})
