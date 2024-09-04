@@ -32,7 +32,7 @@ class RecordSink(ApiSink, HotglueSink):
             }
         )
 
-        self.logger.info(f"Response: {response.status_code} - {response.text}")
+        # self.logger.info(f"Response: {response.status_code} - {response.text}")
 
         id = None
 
@@ -75,7 +75,7 @@ class BatchSink(ApiSink, HotglueBatchSink):
             }
         )
 
-        self.logger.info(f"Response: {response.status_code} - {response.text}")
+        # self.logger.info(f"Response: {response.status_code} - {response.text}")
 
         id = None
 
