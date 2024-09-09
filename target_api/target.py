@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from typing import Type
+import copy
 
 from singer_sdk import Sink
 from target_hotglue.target import TargetHotglue
@@ -44,6 +45,38 @@ class TargetApi(TargetHotglue):
             return BatchSink
         return RecordSink
 
+    def _process_record_message(self, message_dict: dict) -> None:
+        """Process a RECORD message.
+
+        Args:
+            message_dict: TODO
+        """
+        self._assert_line_requires(message_dict, requires={"stream", "record"})
+
+        stream_name = message_dict["stream"]
+        for stream_map in self.mapper.stream_maps[stream_name]:
+            # new_schema = helpers._float_to_decimal(new_schema)
+            raw_record = copy.copy(message_dict["record"])
+            transformed_record = stream_map.transform(raw_record)
+            if transformed_record is None:
+                # Record was filtered out by the map transform
+                continue
+
+            sink = self.get_sink(stream_map.stream_alias, record=transformed_record)
+            context = sink._get_context(transformed_record)
+            if sink.include_sdc_metadata_properties:
+                sink._add_sdc_metadata_to_record(
+                    transformed_record, message_dict, context
+                )
+            else:
+                sink._remove_sdc_metadata_from_record(transformed_record)
+
+            sink._validate_and_parse(transformed_record)
+
+            sink.tally_record_read()
+            transformed_record = sink.preprocess_record(transformed_record, context)
+            sink.process_record(transformed_record, context)
+            sink._after_process_record(context)
 
 if __name__ == "__main__":
     TargetApi.cli()

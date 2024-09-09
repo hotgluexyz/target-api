@@ -74,12 +74,12 @@ class ApiSink(HotglueBaseSink):
         if response.status_code in [429] or 500 <= response.status_code < 600:
             msg = self.response_error_message(response)
             curl = self.curlify_on_error(response)
-            self.logger.info(f"cURL: {curl}")
+            self.logger.warning(f"cURL: {curl}")
             error = {"status_code": response.status_code, "body": msg}
             raise RetriableAPIError(error)
         elif 400 <= response.status_code < 500:
             msg = self.response_error_message(response)
             curl = self.curlify_on_error(response)
-            self.logger.info(f"cURL: {curl}")
+            self.logger.warning(f"cURL: {curl}")
             error = {"status_code": response.status_code, "body": msg}
             raise FatalAPIError(error)
