@@ -71,29 +71,9 @@ class ApiSink(HotglueBaseSink):
             value = ch.get("value")
             if not isinstance(name, str) or not isinstance(value, str):
                 continue
-            custom_headers[name] = value.format(**self._get_str_format_overrides())
+            custom_headers[name] = value
         return custom_headers
         
-    def _get_str_format_overrides(self):
-        tenant_id = os.environ.get("TENANT")
-        root_tenant_id = os.environ.get("ROOT_TENANT_ID")
-        sub_tenant_id = os.environ.get("SUB_TENANT_ID")
-        env_id = os.environ.get("ENV_ID")
-        flow_id = os.environ.get("FLOW")
-        job_id = os.environ.get("JOB_ID")
-        tap = os.environ.get("TAP")
-        connector = os.environ.get("CONNECTOR_ID")
-        return {
-            "tenant": tenant_id,
-            "root_tenant_id": root_tenant_id,
-            "sub_tenant_id": sub_tenant_id,
-            "env_id": env_id,
-            "flow_id": flow_id,
-            "job_id": job_id,
-            "tap": tap,
-            "connector": connector,
-        }
-
     def response_error_message(self, response: requests.Response) -> str:
         try:
             response_text = f" with response body: '{response.text}'"
