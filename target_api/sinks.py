@@ -26,11 +26,10 @@ class RecordSink(ApiSink, HotglueSink):
         return record
 
     def upsert_record(self, record: dict, context: dict):
+        self.logger.info(f"Making request: {self.stream_name}")
         response = self.request_api(
             self._config.get("method", "POST").upper(), request_data=record, headers=self.custom_headers
         )
-
-        self.logger.info(f"Response: {response.status_code} - {response.text}")
 
         id = None
 
@@ -67,11 +66,10 @@ class BatchSink(ApiSink, HotglueBatchSink):
         return record
 
     def make_batch_request(self, records: List[dict]):
+        self.logger.info(f"Making request: {self.stream_name}")
         response = self.request_api(
             self._config.get("method", "POST").upper(), request_data=records, headers=self.custom_headers
         )
-
-        self.logger.info(f"Response: {response.status_code} - {response.text}")
 
         id = None
 
@@ -88,12 +86,15 @@ class BatchSink(ApiSink, HotglueBatchSink):
 
         raw_records = context["records"]
 
-        records = list(map(lambda e: self.process_batch_record(e[1], e[0]), enumerate(raw_records)))
+        for i in range(0, len(raw_records), self.max_size):
+            records = raw_records[i:i+self.max_size]
 
-        try:
-            response = self.make_batch_request(records)
-            result = self.handle_batch_response(response)
-            for state in result.get("state_updates", list()):
-                self.update_state(state)
-        except Exception as e:
-            self.update_state({"error": str(e)})
+            records = list(map(lambda e: self.process_batch_record(e[1], e[0]), enumerate(records)))
+
+            try:
+                response = self.make_batch_request(records)
+                result = self.handle_batch_response(response)
+                for state in result.get("state_updates", list()):
+                    self.update_state(state)
+            except Exception as e:
+                self.update_state({"error": str(e)})
