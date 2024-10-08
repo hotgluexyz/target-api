@@ -27,7 +27,7 @@ class RecordSink(ApiSink, HotglueSink):
 
     def upsert_record(self, record: dict, context: dict):
         response = self.request_api(
-            self._config.get("method", "POST").upper(), request_data=record, headers=self.custom_headers
+            self._config.get("method", "POST").upper(), request_data=record, headers=self.custom_headers, verify=False
         )
 
         self.logger.info(f"Response: {response.status_code} - {response.text}")
@@ -68,7 +68,7 @@ class BatchSink(ApiSink, HotglueBatchSink):
 
     def make_batch_request(self, records: List[dict]):
         response = self.request_api(
-            self._config.get("method", "POST").upper(), request_data=records, headers=self.custom_headers
+            self._config.get("method", "POST").upper(), request_data=records, headers=self.custom_headers, verify=False
         )
 
         self.logger.info(f"Response: {response.status_code} - {response.text}")
