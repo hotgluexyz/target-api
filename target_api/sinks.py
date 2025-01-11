@@ -98,10 +98,12 @@ class BatchSink(ApiSink, HotglueBatchSink):
         raw_records = context["records"]
 
         records = list(map(lambda e: self.process_batch_record(e[1], e[0]), enumerate(raw_records)))
+        batch_external_id = self.generate_batch_id()
+        # add batch_external_id to each record
+        [record.update({"externalId": batch_external_id}) for record in records]
 
         try:
             id = self.make_batch_request(records)
-            batch_external_id = self.generate_batch_id()
             result = self.handle_batch_response(id, batch_external_id)
             for state in result.get("state_updates", list()):
                 self.update_state(state)
