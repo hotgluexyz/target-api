@@ -7,6 +7,9 @@ from typing import List
 from target_hotglue.client import HotglueBatchSink, HotglueSink
 
 from target_api.client import ApiSink
+import os
+import math
+import hashlib
 
 
 class RecordSink(ApiSink, HotglueSink):
@@ -80,7 +83,13 @@ class BatchSink(ApiSink, HotglueBatchSink):
         except Exception as e:
             self.logger.warning(f"Unable to get response's id: {e}")
 
-        return id, response.ok, dict()
+        return id
+    
+    def generate_batch_id(self):
+        index = math.ceil(self._total_records_read/self.max_size)
+        external_id = f"{os.environ.get('JOB_ROOT', 'job_Example')}:{index}"
+        external_id = hashlib.md5(external_id.encode()).hexdigest()
+        return external_id
 
     def process_batch(self, context: dict) -> None:
         if not self.latest_state:
@@ -89,11 +98,17 @@ class BatchSink(ApiSink, HotglueBatchSink):
         raw_records = context["records"]
 
         records = list(map(lambda e: self.process_batch_record(e[1], e[0]), enumerate(raw_records)))
+        batch_external_id = self.generate_batch_id()
+        # add batch_external_id to each record
+        [record.update({"hgBatchId": batch_external_id}) for record in records]
 
         try:
-            response = self.make_batch_request(records)
-            result = self.handle_batch_response(response)
+            id = self.make_batch_request(records)
+            result = self.handle_batch_response(id, batch_external_id)
             for state in result.get("state_updates", list()):
                 self.update_state(state)
         except Exception as e:
-            self.update_state({"error": str(e)})
+            self.update_state({"error": str(e), "hgBatchId": batch_external_id})
+
+    def handle_batch_response(self, id, batch_external_id) -> dict:
+        return {"state_updates": [{"id": id, "success": True, "hgBatchId": batch_external_id}]}
