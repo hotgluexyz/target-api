@@ -98,9 +98,13 @@ class BatchSink(ApiSink, HotglueBatchSink):
         raw_records = context["records"]
 
         records = list(map(lambda e: self.process_batch_record(e[1], e[0]), enumerate(raw_records)))
-        batch_external_id = self.generate_batch_id()
-        # add batch_external_id to each record
-        [record.update({"hgBatchId": batch_external_id}) for record in records]
+        
+        batch_external_id = None
+        inject_batch_ids = self.config.get("inject_batch_ids", False)
+        if inject_batch_ids:
+            batch_external_id = self.generate_batch_id()
+            # add batch_external_id to each record
+            [record.update({"hgBatchId": batch_external_id}) for record in records]
 
         try:
             id = self.make_batch_request(records)
@@ -108,7 +112,13 @@ class BatchSink(ApiSink, HotglueBatchSink):
             for state in result.get("state_updates", list()):
                 self.update_state(state)
         except Exception as e:
-            self.update_state({"error": str(e), "hgBatchId": batch_external_id})
+            state = {"error": str(e)}
+            if inject_batch_ids:
+                state.update({"hgBatchId": batch_external_id})
+            self.update_state(state)
 
-    def handle_batch_response(self, id, batch_external_id) -> dict:
-        return {"state_updates": [{"id": id, "success": True, "hgBatchId": batch_external_id}]}
+    def handle_batch_response(self, id, batch_external_id=None) -> dict:
+        state = {"id": id, "success": True}
+        if batch_external_id:
+            state.update({"hgBatchId": batch_external_id})
+        return {"state_updates": [state]}
