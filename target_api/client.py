@@ -81,13 +81,21 @@ class ApiSink(HotglueBaseSink):
             response_text = f" with response body: '{response.text}'"
         except:
             response_text = None
-        return f"Status code: {response.status_code} with {response.reason} for path: {response.request.url} {response_text}"
+
+        request_url = response.request.url
+        if self._config.get("api_key"):
+            request_url = request_url.replace(self._config.get("api_key"), "__MASKED__")
+        
+        return f"Status code: {response.status_code} with {response.reason} for path: {request_url} {response_text}"
     
     def curlify_on_error(self, response):
         command = "curl -X {method} -H {headers} -d '{data}' '{uri}'"
         method = response.request.method
         uri = response.request.url
         data = response.request.body
+
+        if self._config.get("api_key_url"):
+            uri = uri.replace(self._config.get("api_key"), "__MASKED__")
 
         headers = []
         api_key_header = (self._config.get("api_key_header") or "x-api-key").lower()
