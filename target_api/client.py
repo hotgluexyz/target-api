@@ -90,9 +90,11 @@ class ApiSink(HotglueBaseSink):
         data = response.request.body
 
         headers = []
+        api_key_header = (self._config.get("api_key_header") or "x-api-key").lower()
+
         for k, v in response.request.headers.items():
             # Mask the Authorization header
-            if k.lower() in ["authorization", "x-api-key", self._config.get("api_key_header")]:
+            if k.lower() == api_key_header:
                 v = "__MASKED__"
             headers.append('"{0}: {1}"'.format(k, v))
 
