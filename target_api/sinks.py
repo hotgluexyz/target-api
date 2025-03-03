@@ -46,6 +46,9 @@ class RecordSink(ApiSink, HotglueSink):
 
 
 class BatchSink(ApiSink, HotglueBatchSink):
+
+    send_empty_record = False
+
     @property
     def max_size(self):
         if self.config.get("process_as_batch"):
@@ -96,15 +99,23 @@ class BatchSink(ApiSink, HotglueBatchSink):
             self.init_state()
 
         raw_records = context["records"]
-
-        records = list(map(lambda e: self.process_batch_record(e[1], e[0]), enumerate(raw_records)))
-        
         batch_external_id = None
-        inject_batch_ids = self.config.get("inject_batch_ids", False)
-        if inject_batch_ids:
-            batch_external_id = self.generate_batch_id()
-            # add batch_external_id to each record
-            [record.update({"hgBatchId": batch_external_id}) for record in records]
+
+        if not self.send_empty_record:
+            records = list(
+                map(
+                    lambda e: self.process_batch_record(e[1], e[0]),
+                    enumerate(raw_records),
+                )
+            )
+
+            inject_batch_ids = self.config.get("inject_batch_ids", False)
+            if inject_batch_ids:
+                batch_external_id = self.generate_batch_id()
+                # add batch_external_id to each record
+                [record.update({"hgBatchId": batch_external_id}) for record in records]
+        else:
+            records = raw_records
 
         try:
             id = self.make_batch_request(records)
