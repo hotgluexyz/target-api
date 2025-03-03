@@ -7,7 +7,6 @@ from target_hotglue.auth import ApiAuthenticator
 from target_hotglue.client import HotglueBaseSink
 import requests
 from singer_sdk.exceptions import FatalAPIError, RetriableAPIError
-from curlify import to_curl
 
 
 class ApiSink(HotglueBaseSink):
@@ -82,8 +81,20 @@ class ApiSink(HotglueBaseSink):
         return f"Status code: {response.status_code} with {response.reason} for path: {response.request.url} {response_text}"
     
     def curlify_on_error(self, response):
-        curl = to_curl(response.request)
-        return curl
+        command = "curl -X {method} -H {headers} -d '{data}' '{uri}'"
+        method = response.request.method
+        uri = response.request.url
+        data = response.request.body
+
+        headers = []
+        for k, v in response.request.headers.items():
+            # Mask the Authorization header
+            if k.lower() in ["authorization", "x-api-key", self._config.get("api_key_header")]:
+                v = "__MASKED__"
+            headers.append('"{0}: {1}"'.format(k, v))
+
+        headers = " -H ".join(headers)
+        return command.format(method=method, headers=headers, data=data, uri=uri)
 
     def validate_response(self, response: requests.Response) -> None:
         """Validate HTTP response."""
