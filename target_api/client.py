@@ -6,8 +6,11 @@ from pydantic import BaseModel
 from target_hotglue.auth import ApiAuthenticator
 from target_hotglue.client import HotglueBaseSink
 import requests
+import urllib3
 from singer_sdk.exceptions import FatalAPIError, RetriableAPIError
 
+
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 class ApiSink(HotglueBaseSink):
     @property
