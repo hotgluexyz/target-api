@@ -1,10 +1,13 @@
 from __future__ import annotations
 
+import json
 import os
+from sys import getsizeof
 
 from pydantic import BaseModel
 from target_hotglue.auth import ApiAuthenticator
 from target_hotglue.client import HotglueBaseSink
+from target_hotglue.common import HGJSONEncoder
 import requests
 import urllib3
 from singer_sdk.exceptions import FatalAPIError, RetriableAPIError
@@ -75,7 +78,19 @@ class ApiSink(HotglueBaseSink):
                 continue
             custom_headers[name] = value
         return custom_headers
-        
+
+    @property
+    def is_full(self) -> bool:
+        is_full_in_length = super().is_full
+        is_full_in_bytes = False
+
+        if self._config.get("max_size_in_bytes") and self._pending_batch:
+            max_size_in_bytes = int(self._config.get("max_size_in_bytes"))
+            batch_size_in_bytes = getsizeof(json.dumps(self._pending_batch["records"], cls=HGJSONEncoder))
+            is_full_in_bytes = batch_size_in_bytes >= max_size_in_bytes * 0.9
+
+        return is_full_in_length or is_full_in_bytes
+
     def response_error_message(self, response: requests.Response) -> str:
         try:
             response_text = f" with response body: '{response.text}'"
