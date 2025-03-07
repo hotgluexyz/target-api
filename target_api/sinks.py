@@ -97,14 +97,14 @@ class BatchSink(ApiSink, HotglueBatchSink):
             self.init_state()
 
         raw_records = context["records"]
+        batch_external_id = None
 
         for i in range(0, len(raw_records), self.max_size):
             records = raw_records[i:i+self.max_size]
 
             if not self.send_empty_record:
                 records = list(map(lambda e: self.process_batch_record(e[1], e[0]), enumerate(records)))
-            
-                batch_external_id = None
+
                 inject_batch_ids = self.config.get("inject_batch_ids", False)
                 if inject_batch_ids:
                     batch_external_id = self.generate_batch_id()
