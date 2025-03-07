@@ -1,14 +1,19 @@
 from __future__ import annotations
 
+import json
 import os
+from sys import getsizeof
 
 from pydantic import BaseModel
 from target_hotglue.auth import ApiAuthenticator
 from target_hotglue.client import HotglueBaseSink
+from target_hotglue.common import HGJSONEncoder
 import requests
+import urllib3
 from singer_sdk.exceptions import FatalAPIError, RetriableAPIError
-from curlify import to_curl
 
+
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 class ApiSink(HotglueBaseSink):
     @property
@@ -73,29 +78,63 @@ class ApiSink(HotglueBaseSink):
                 continue
             custom_headers[name] = value
         return custom_headers
-        
+
+    @property
+    def is_full(self) -> bool:
+        is_full_in_length = super().is_full
+        is_full_in_bytes = False
+
+        if self._config.get("max_size_in_bytes") and self._pending_batch:
+            max_size_in_bytes = int(self._config.get("max_size_in_bytes"))
+            batch_size_in_bytes = getsizeof(json.dumps(self._pending_batch["records"], cls=HGJSONEncoder))
+            is_full_in_bytes = batch_size_in_bytes >= max_size_in_bytes * 0.9
+
+        return is_full_in_length or is_full_in_bytes
+
     def response_error_message(self, response: requests.Response) -> str:
         try:
             response_text = f" with response body: '{response.text}'"
         except:
             response_text = None
-        return f"Status code: {response.status_code} with {response.reason} for path: {response.request.url} {response_text}"
+
+        request_url = response.request.url
+        if self._config.get("api_key"):
+            request_url = request_url.replace(self._config.get("api_key"), "__MASKED__")
+        
+        return f"Status code: {response.status_code} with {response.reason} for path: {request_url} {response_text}"
     
     def curlify_on_error(self, response):
-        curl = to_curl(response.request)
-        return curl
+        command = "curl -X {method} -H {headers} -d '{data}' '{uri}'"
+        method = response.request.method
+        uri = response.request.url
+        data = response.request.body
+
+        if self._config.get("api_key_url"):
+            uri = uri.replace(self._config.get("api_key"), "__MASKED__")
+
+        headers = []
+        api_key_header = (self._config.get("api_key_header") or "x-api-key").lower()
+
+        for k, v in response.request.headers.items():
+            # Mask the Authorization header
+            if k.lower() == api_key_header:
+                v = "__MASKED__"
+            headers.append('"{0}: {1}"'.format(k, v))
+
+        headers = " -H ".join(headers)
+        return command.format(method=method, headers=headers, data=data, uri=uri)
 
     def validate_response(self, response: requests.Response) -> None:
         """Validate HTTP response."""
         if response.status_code in [429] or 500 <= response.status_code < 600:
             msg = self.response_error_message(response)
             curl = self.curlify_on_error(response)
-            self.logger.info(f"cURL: {curl}")
+            self.logger.warning(f"cURL: {curl}")
             error = {"status_code": response.status_code, "body": msg}
             raise RetriableAPIError(error)
         elif 400 <= response.status_code < 500:
             msg = self.response_error_message(response)
             curl = self.curlify_on_error(response)
-            self.logger.info(f"cURL: {curl}")
+            self.logger.warning(f"cURL: {curl}")
             error = {"status_code": response.status_code, "body": msg}
             raise FatalAPIError(error)
