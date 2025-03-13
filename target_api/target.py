@@ -86,7 +86,8 @@ class TargetApi(TargetHotglue):
                 # fields from "sink.latest_state" (if they exist)
                 for key in self._latest_state.keys():
                     sink_latest_state = sink.latest_state or dict()
-                    self._latest_state[key].update(sink_latest_state.get(key) or dict())
+                    if isinstance(self._latest_state[key], dict):
+                        self._latest_state[key].update(sink_latest_state.get(key) or dict())
 
 if __name__ == "__main__":
     TargetApi.cli()
