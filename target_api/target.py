@@ -2,14 +2,16 @@
 
 from __future__ import annotations
 
-from typing import Type
+from typing import Type, Optional
 import copy
 
 from singer_sdk import Sink
 from target_hotglue.target import TargetHotglue
 
 from target_api.sinks import BatchSink, RecordSink
+from singer_sdk.helpers._compat import final
 from collections import OrderedDict
+from target_hotglue.target_base import update_state
 
 
 class TargetApi(TargetHotglue):
@@ -44,6 +46,86 @@ class TargetApi(TargetHotglue):
         if self.config.get("process_as_batch"):
             return BatchSink
         return RecordSink
+
+    @final
+    def drain_one(self, sink: Optional[Sink]) -> None:
+        """Drain a specific sink.
+
+        Args:
+            sink: Sink to be drained.
+        """
+        # post empty records only if post_empty_record flag is set as True (it's False by default)
+        if not self.config.get("post_empty_record", False):
+            super().drain_one(sink)
+        
+        else:
+            draining_status = sink.start_drain()
+            # if there is schema but no records for a sink, post an empty record
+            if not draining_status and (
+                not sink.latest_state
+                or not sink.latest_state.get("summary", {}).get(sink.name)
+            ):
+                draining_status = {"records": [{}]}
+                sink.send_empty_record = True
+
+            
+            # send an empty record for batchSink
+            if self.config.get("process_as_batch"):
+                sink.process_batch(draining_status)
+                sink.mark_drained()
+            # send an empty record and update state for single record Sink
+            else:
+                sink.process_record({}, {})
+                if not self._latest_state:
+                    # If "self._latest_state" is empty, save the value of "sink.latest_state"
+                    self._latest_state = sink.latest_state
+                else:
+                    for key in self._latest_state.keys():
+                        sink_latest_state = sink.latest_state or dict()
+                        self._latest_state[key].update(sink_latest_state.get(key) or dict())
+                self._write_state_message(self._latest_state)
+    
+    @final
+    def drain_all(self, is_endofpipe: bool = False) -> None:
+        """Drains all sinks, starting with those cleared due to changed schema.
+
+        This method is internal to the SDK and should not need to be overridden.
+
+        Args:
+            is_endofpipe: This is passed by the
+                          :meth:`~singer_sdk.Sink._process_endofpipe()` which
+                          is called after the target instance has finished
+                          listening to the stdin
+        """
+        state = copy.deepcopy(self._latest_state)
+        self._drain_all(self._sinks_to_clear, 1)
+        if is_endofpipe:
+            for sink in self._sinks_to_clear:
+                if sink:
+                    sink.clean_up()
+        self._sinks_to_clear = []
+        self._drain_all(list(self._sinks_active.values()), self.max_parallelism)
+        if is_endofpipe:
+            for sink in self._sinks_active.values():
+                if sink:
+                    sink.clean_up()
+
+        # Build state from BatchSinks
+        batch_sinks = [s for s in self._sinks_active.values() if isinstance(s, BatchSink)]
+        for s in batch_sinks:
+            if s.name not in state.get("bookmarks", []):
+                state = update_state(state, s.latest_state, self.logger)
+            else:
+                state["bookmarks"][s.name] = s.latest_state["bookmarks"][s.name]
+                state["summary"][s.name] = s.latest_state["summary"][s.name]
+        
+        # for single record sinks drain_all is executed after processing the records therefore the latest_state is already populated
+        # when there is no records drain_all is executed first so we process and write the state in drain_one and avoid writing an extra state here
+        if self.config.get("post_empty_record", False) and not self.config.get("process_as_batch"):
+            pass
+        else:
+            self._write_state_message(state)
+            self._reset_max_record_age()
 
     def _process_record_message(self, message_dict: dict) -> None:
         """Process a RECORD message.

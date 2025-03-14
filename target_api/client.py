@@ -11,6 +11,7 @@ from target_hotglue.common import HGJSONEncoder
 import requests
 import urllib3
 from singer_sdk.exceptions import FatalAPIError, RetriableAPIError
+import backoff
 
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -138,3 +139,37 @@ class ApiSink(HotglueBaseSink):
             self.logger.warning(f"cURL: {curl}")
             error = {"status_code": response.status_code, "body": msg}
             raise FatalAPIError(error)
+
+
+    @backoff.on_exception(
+        backoff.expo,
+        (RetriableAPIError, requests.exceptions.ReadTimeout),
+        max_tries=5,
+        factor=2,
+    )
+    def _request(
+        self, http_method, endpoint, params={}, request_data=None, headers={}, verify=True
+    ) -> requests.PreparedRequest:
+        """Prepare a request object."""
+        url = self.url(endpoint)
+        headers.update(self.default_headers)
+        headers.update({"Content-Type": "application/json"})
+        params.update(self.params)
+
+        # changing data dumping to be able to send {} for when post_empty_record is true
+        data = (
+            json.dumps(request_data, cls=HGJSONEncoder)
+            if request_data is not None
+            else None
+        )
+
+        response = requests.request(
+            method=http_method,
+            url=url,
+            params=params,
+            headers=headers,
+            data=data,
+            verify=verify
+        )
+        self.validate_response(response)
+        return response
