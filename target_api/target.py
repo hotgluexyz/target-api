@@ -39,7 +39,6 @@ class TargetApi(TargetHotglue):
         state: str = None
     ) -> None:
         super().__init__(config, parse_env_config, validate_config, state)
-        self.streaming_job = os.environ.get("STREAMING_JOB")
 
         # NOTE: We want to override this with an ordered dict to enforce order when we iterate later
         self._sinks_active = OrderedDict()
@@ -78,13 +77,13 @@ class TargetApi(TargetHotglue):
             # send an empty record and update state for single record Sink
             else:
                 sink.process_record({}, {})
+                sink_latest_state = sink.latest_state or dict()
                 if self.streaming_job:
                     if not self._latest_state["target"]:
                         # If "self._latest_state" is empty, save the value of "sink.latest_state"
-                        self._latest_state["target"] = sink.latest_state
+                        self._latest_state["target"] = sink_latest_state
                     else:
                         for key in self._latest_state["target"].keys():
-                            sink_latest_state = sink.latest_state or dict()
                             self._latest_state["target"][key].update(sink_latest_state.get(key) or dict())
                 else:
                     if not self._latest_state:
@@ -92,7 +91,6 @@ class TargetApi(TargetHotglue):
                         self._latest_state = sink.latest_state
                     else:
                         for key in self._latest_state.keys():
-                            sink_latest_state = sink.latest_state or dict()
                             self._latest_state[key].update(sink_latest_state.get(key) or dict())
                 self._write_state_message(self._latest_state)
 
@@ -179,25 +177,25 @@ class TargetApi(TargetHotglue):
             sink._after_process_record(context)
 
             if self.streaming_job:
+                sink_latest_state = sink.latest_state or dict()
                 if not self._latest_state["target"]:
                     # If "self._latest_state["target"]" is empty, save the value of "sink.latest_state"
-                    self._latest_state["target"] = sink.latest_state
+                    self._latest_state["target"] = sink_latest_state
                 else:
                     # If "self._latest_state["target"]" is not empty, update all its fields with the
                     # fields from "sink.latest_state" (if they exist)
                     for key in self._latest_state["target"].keys():
-                        sink_latest_state = sink.latest_state or dict()
                         if isinstance(self._latest_state["target"][key], dict):
                             self._latest_state["target"][key].update(sink_latest_state.get(key) or dict())
             else:
                 if not self._latest_state:
                     # If "self._latest_state" is empty, save the value of "sink.latest_state"
-                    self._latest_state = sink.latest_state
+                    self._latest_state = sink_latest_state
                 else:
                     # If "self._latest_state" is not empty, update all its fields with the
                     # fields from "sink.latest_state" (if they exist)
                     for key in self._latest_state.keys():
-                        sink_latest_state = sink.latest_state or dict()
+                        sink_latest_state = sink_latest_state
                         if isinstance(self._latest_state[key], dict):
                             self._latest_state[key].update(sink_latest_state.get(key) or dict())
 
