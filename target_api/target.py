@@ -124,7 +124,7 @@ class TargetApi(TargetHotglue):
         for s in batch_sinks:
             if self.streaming_job:
                 if s.name not in state["target"].get("bookmarks", []):
-                    state = update_state(state, s.latest_state, self.logger)
+                    state["target"] = update_state(state["target"], s.latest_state, self.logger)
                 else:
                     state["target"]["bookmarks"][s.name] = s.latest_state["bookmarks"][s.name]
                     state["target"]["summary"][s.name] = s.latest_state["summary"][s.name]
