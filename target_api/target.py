@@ -176,8 +176,8 @@ class TargetApi(TargetHotglue):
             sink.process_record(transformed_record, context)
             sink._after_process_record(context)
 
+            sink_latest_state = sink.latest_state or dict()
             if self.streaming_job:
-                sink_latest_state = sink.latest_state or dict()
                 if not self._latest_state["target"]:
                     # If "self._latest_state["target"]" is empty, save the value of "sink.latest_state"
                     self._latest_state["target"] = sink_latest_state
@@ -195,7 +195,6 @@ class TargetApi(TargetHotglue):
                     # If "self._latest_state" is not empty, update all its fields with the
                     # fields from "sink.latest_state" (if they exist)
                     for key in self._latest_state.keys():
-                        sink_latest_state = sink_latest_state
                         if isinstance(self._latest_state[key], dict):
                             self._latest_state[key].update(sink_latest_state.get(key) or dict())
 
