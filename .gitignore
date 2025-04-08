@@ -2,7 +2,7 @@
 .secrets/*
 
 # Ignore meltano internal cache and sqlite systemdb
-
+.idea/
 .meltano/
 
 # Byte-compiled / optimized / DLL files
