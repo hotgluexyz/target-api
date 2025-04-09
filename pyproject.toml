@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "target-api"
-version = "0.0.19"
+version = "0.0.22"
 description = "`target-api` is a Singer target for Api, built with the Meltano Singer SDK."
 readme = "README.md"
 authors = ["Davi Souza"]
@@ -14,7 +14,7 @@ license = "Apache-2.0"
 python = "<3.11,>=3.7.1"
 requests = "^2.25.1"
 singer-sdk = "^0.9.0"
-target-hotglue = "^0.0.10"
+target-hotglue = "^0.0.11"
 
 [tool.poetry.dev-dependencies]
 pytest = "^7.2.1"

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import Type, Optional
 import copy
+import os
 
 from singer_sdk import Sink
 from target_hotglue.target import TargetHotglue
@@ -57,7 +58,7 @@ class TargetApi(TargetHotglue):
         # post empty records only if post_empty_record flag is set as True (it's False by default)
         if not self.config.get("post_empty_record", False):
             super().drain_one(sink)
-        
+
         else:
             draining_status = sink.start_drain()
             # if there is schema but no records for a sink, post an empty record
@@ -68,7 +69,7 @@ class TargetApi(TargetHotglue):
                 draining_status = {"records": [{}]}
                 sink.send_empty_record = True
 
-            
+
             # send an empty record for batchSink
             if self.config.get("process_as_batch"):
                 sink.process_batch(draining_status)
@@ -76,15 +77,23 @@ class TargetApi(TargetHotglue):
             # send an empty record and update state for single record Sink
             else:
                 sink.process_record({}, {})
-                if not self._latest_state:
-                    # If "self._latest_state" is empty, save the value of "sink.latest_state"
-                    self._latest_state = sink.latest_state
+                sink_latest_state = sink.latest_state or dict()
+                if self.streaming_job:
+                    if not self._latest_state["target"]:
+                        # If "self._latest_state" is empty, save the value of "sink.latest_state"
+                        self._latest_state["target"] = sink_latest_state
+                    else:
+                        for key in self._latest_state["target"].keys():
+                            self._latest_state["target"][key].update(sink_latest_state.get(key) or dict())
                 else:
-                    for key in self._latest_state.keys():
-                        sink_latest_state = sink.latest_state or dict()
-                        self._latest_state[key].update(sink_latest_state.get(key) or dict())
+                    if not self._latest_state:
+                        # If "self._latest_state" is empty, save the value of "sink.latest_state"
+                        self._latest_state = sink.latest_state
+                    else:
+                        for key in self._latest_state.keys():
+                            self._latest_state[key].update(sink_latest_state.get(key) or dict())
                 self._write_state_message(self._latest_state)
-    
+
     @final
     def drain_all(self, is_endofpipe: bool = False) -> None:
         """Drains all sinks, starting with those cleared due to changed schema.
@@ -113,12 +122,19 @@ class TargetApi(TargetHotglue):
         # Build state from BatchSinks
         batch_sinks = [s for s in self._sinks_active.values() if isinstance(s, BatchSink)]
         for s in batch_sinks:
-            if s.name not in state.get("bookmarks", []):
-                state = update_state(state, s.latest_state, self.logger)
+            if self.streaming_job:
+                if s.name not in state["target"].get("bookmarks", []):
+                    state["target"] = update_state(state["target"], s.latest_state, self.logger)
+                else:
+                    state["target"]["bookmarks"][s.name] = s.latest_state["bookmarks"][s.name]
+                    state["target"]["summary"][s.name] = s.latest_state["summary"][s.name]
             else:
-                state["bookmarks"][s.name] = s.latest_state["bookmarks"][s.name]
-                state["summary"][s.name] = s.latest_state["summary"][s.name]
-        
+                if s.name not in state.get("bookmarks", []):
+                    state = update_state(state, s.latest_state, self.logger)
+                else:
+                    state["bookmarks"][s.name] = s.latest_state["bookmarks"][s.name]
+                    state["summary"][s.name] = s.latest_state["summary"][s.name]
+
         # for single record sinks drain_all is executed after processing the records therefore the latest_state is already populated
         # when there is no records drain_all is executed first so we process and write the state in drain_one and avoid writing an extra state here
         if self.config.get("post_empty_record", False) and not self.config.get("process_as_batch"):
@@ -160,16 +176,27 @@ class TargetApi(TargetHotglue):
             sink.process_record(transformed_record, context)
             sink._after_process_record(context)
 
-            if not self._latest_state:
-                # If "self._latest_state" is empty, save the value of "sink.latest_state"
-                self._latest_state = sink.latest_state
+            sink_latest_state = sink.latest_state or dict()
+            if self.streaming_job:
+                if not self._latest_state["target"]:
+                    # If "self._latest_state["target"]" is empty, save the value of "sink.latest_state"
+                    self._latest_state["target"] = sink_latest_state
+                else:
+                    # If "self._latest_state["target"]" is not empty, update all its fields with the
+                    # fields from "sink.latest_state" (if they exist)
+                    for key in self._latest_state["target"].keys():
+                        if isinstance(self._latest_state["target"][key], dict):
+                            self._latest_state["target"][key].update(sink_latest_state.get(key) or dict())
             else:
-                # If "self._latest_state" is not empty, update all its fields with the
-                # fields from "sink.latest_state" (if they exist)
-                for key in self._latest_state.keys():
-                    sink_latest_state = sink.latest_state or dict()
-                    if isinstance(self._latest_state[key], dict):
-                        self._latest_state[key].update(sink_latest_state.get(key) or dict())
+                if not self._latest_state:
+                    # If "self._latest_state" is empty, save the value of "sink.latest_state"
+                    self._latest_state = sink_latest_state
+                else:
+                    # If "self._latest_state" is not empty, update all its fields with the
+                    # fields from "sink.latest_state" (if they exist)
+                    for key in self._latest_state.keys():
+                        if isinstance(self._latest_state[key], dict):
+                            self._latest_state[key].update(sink_latest_state.get(key) or dict())
 
 if __name__ == "__main__":
     TargetApi.cli()
