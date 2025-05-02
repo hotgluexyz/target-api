@@ -5,6 +5,8 @@ from __future__ import annotations
 from typing import Type, Optional
 import copy
 import os
+import json
+from datetime import datetime
 
 from singer_sdk import Sink
 from target_hotglue.target import TargetHotglue
@@ -39,6 +41,18 @@ class TargetApi(TargetHotglue):
         state: str = None
     ) -> None:
         super().__init__(config, parse_env_config, validate_config, state)
+
+        # Use self._config_file_path to write the current timestamp to the key 'key_written_by_target_api' in the config and log when its done writing
+        # Do not override the config, add this key to the existing config
+        with open(self._config_file_path, 'r') as f:
+            modified_config = json.load(f)
+
+        modified_config['key_written_by_target_api'] = datetime.now().isoformat()
+
+        with open(self._config_file_path, 'w') as f:
+            json.dump(modified_config, f)
+
+        self.logger.info(f"Wrote key 'key_written_by_target_api' with value {modified_config['key_written_by_target_api']}")
 
         # NOTE: We want to override this with an ordered dict to enforce order when we iterate later
         self._sinks_active = OrderedDict()
