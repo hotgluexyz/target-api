@@ -1,0 +1,42 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "target-api",
+            "type": "debugpy",
+            "request": "launch",
+            "justMyCode": false,
+            "program": "../target_api/target.py",
+            "cwd": "${workspaceFolder}/.secrets",
+            "args": [
+                "<",
+                "sample.singer",
+                "--config",
+                "config.json",
+                ">",
+                "target-state.json"
+            ],
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "target-api-streaming",
+            "type": "debugpy",
+            "request": "launch",
+            "justMyCode": false,
+            "program": "../target_api/target.py",
+            "cwd": "${workspaceFolder}/.secrets",
+            "args": [
+                "<",
+                "sample.singer",
+                "--config",
+                "config.json",
+                ">",
+                "target-state.json"
+            ],
+            "console": "integratedTerminal",
+            "env": {
+                "STREAMING_JOB": "True"
+            }
+        }
+    ]
+}

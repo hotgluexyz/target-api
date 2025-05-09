@@ -54,6 +54,8 @@ class TargetApi(TargetHotglue):
 
         self.logger.info(f"Wrote key 'key_written_by_target_api' with value {modified_config['key_written_by_target_api']} to {self._config_file_path}")
 
+        raise Exception("raise test exception")
+
         # NOTE: We want to override this with an ordered dict to enforce order when we iterate later
         self._sinks_active = OrderedDict()
 
