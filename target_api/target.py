@@ -21,6 +21,7 @@ class TargetApi(TargetHotglue):
     name = "target-api"
     SINK_TYPES = [RecordSink, BatchSink]
     target_counter = {}
+    batch_id_index = 0
 
     @property
     def MAX_PARALLELISM(self):
