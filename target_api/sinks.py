@@ -87,9 +87,10 @@ class BatchSink(ApiSink, HotglueBatchSink):
         return id
     
     def generate_batch_id(self):
-        index = math.ceil(self._total_records_read/self.max_size)
+        index = self._target.batch_id_index
         external_id = f"{os.environ.get('JOB_ROOT', 'job_Example')}:{self.name}:{index}"
         external_id = hashlib.md5(external_id.encode()).hexdigest()
+        self._target.batch_id_index += 1
         return external_id
 
     def process_batch(self, context: dict) -> None:
