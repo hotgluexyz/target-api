@@ -94,7 +94,7 @@ class ApiSink(HotglueBaseSink):
 
     def response_error_message(self, response: requests.Response) -> str:
         try:
-            response_text = f" with response body: '{response.text}'"
+            response_text = f" with response body: '{response.text}'"[:5000]
         except:
             response_text = None
 
@@ -108,7 +108,7 @@ class ApiSink(HotglueBaseSink):
         command = "curl -X {method} -H {headers} -d '{data}' '{uri}'"
         method = response.request.method
         uri = response.request.url
-        data = response.request.body
+        data = response.request.body[:5000] if response.request.body else None
 
         if self._config.get("api_key_url"):
             uri = uri.replace(self._config.get("api_key"), "__MASKED__")
