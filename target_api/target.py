@@ -177,6 +177,12 @@ class TargetApi(TargetHotglue):
             sink.process_record(transformed_record, context)
             sink._after_process_record(context)
 
+            if sink.is_full:
+                self.logger.info(
+                    f"Target sink for '{sink.stream_name}' is full. Draining..."
+                )
+                self.drain_one(sink)
+
             sink_latest_state = sink.latest_state or dict()
             if self.streaming_job:
                 if not self._latest_state["target"]:
