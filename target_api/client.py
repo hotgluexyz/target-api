@@ -173,3 +173,4 @@ class ApiSink(HotglueBaseSink):
         )
         self.validate_response(response)
         return response
+
