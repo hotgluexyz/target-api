@@ -22,6 +22,7 @@ class TargetApi(TargetHotglue):
     SINK_TYPES = [RecordSink, BatchSink]
     target_counter = {}
     batch_id_index = 0
+    last_processed_sink = None
 
     @property
     def MAX_PARALLELISM(self):
@@ -162,6 +163,14 @@ class TargetApi(TargetHotglue):
                 continue
 
             sink = self.get_sink(stream_map.stream_alias, record=transformed_record)
+
+            if not self.last_processed_sink:
+                self.last_processed_sink = sink
+            elif self.last_processed_sink != sink:
+                # when processing a new sink, we need to drain the last processed sink to keep the order of the records
+                self.drain_one(self.last_processed_sink)
+                self.last_processed_sink = sink
+
             context = sink._get_context(transformed_record)
             if sink.include_sdc_metadata_properties:
                 sink._add_sdc_metadata_to_record(
@@ -176,6 +185,12 @@ class TargetApi(TargetHotglue):
             transformed_record = sink.preprocess_record(transformed_record, context)
             sink.process_record(transformed_record, context)
             sink._after_process_record(context)
+
+            if sink.is_full:
+                self.logger.info(
+                    f"Target sink for '{sink.stream_name}' is full. Draining..."
+                )
+                self.drain_one(sink)
 
             sink_latest_state = sink.latest_state or dict()
             if self.streaming_job:
