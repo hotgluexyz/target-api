@@ -17,6 +17,8 @@ import backoff
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 class ApiSink(HotglueBaseSink):
+
+    a = 1
     @property
     def name(self):
         return self.stream_name
