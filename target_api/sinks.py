@@ -16,9 +16,9 @@ class RecordSink(ApiSink, HotglueSink):
     def preprocess_record(self, record: dict, context: dict) -> dict:
         self.a = self.a + 1
 
-        if a == 3:
+        if self.a == 3:
             raise Exception("test")
-            
+
         if self.config.get("add_stream_key"):
             record["stream"] = self.stream_name
 
