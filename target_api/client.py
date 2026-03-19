@@ -143,7 +143,7 @@ class ApiSink(HotglueBaseSink):
 
     @backoff.on_exception(
         backoff.expo,
-        (RetriableAPIError, requests.exceptions.ReadTimeout),
+        (RetriableAPIError, requests.exceptions.Timeout),
         max_tries=5,
         factor=2,
     )
