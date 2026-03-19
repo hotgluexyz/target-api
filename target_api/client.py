@@ -143,7 +143,7 @@ class ApiSink(HotglueBaseSink):
 
     @backoff.on_exception(
         backoff.expo,
-        (RetriableAPIError, requests.exceptions.ReadTimeout),
+        (RetriableAPIError, requests.exceptions.Timeout),
         max_tries=5,
         factor=2,
     )
@@ -169,7 +169,8 @@ class ApiSink(HotglueBaseSink):
             params=params,
             headers=headers,
             data=data,
-            verify=verify
+            verify=verify,
+            timeout=self._config.get("timeout", 600)
         )
         self.validate_response(response)
         return response
