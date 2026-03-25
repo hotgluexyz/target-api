@@ -121,7 +121,7 @@ class BatchSink(ApiSink, HotglueBatchSink):
                 if inject_batch_ids:
                     state.update({"hgBatchId": batch_external_id})
                 self.update_state(state)
-                
+
     def handle_batch_response(self, id, batch_external_id=None) -> dict:
         state = {"id": id, "success": True}
         if batch_external_id:
