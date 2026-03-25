@@ -8,7 +8,6 @@ from target_hotglue.client import HotglueBatchSink, HotglueSink
 
 from target_api.client import ApiSink
 import os
-import math
 import hashlib
 
 
@@ -22,7 +21,7 @@ class RecordSink(ApiSink, HotglueSink):
 
             try:
                 metadata.update(json.loads(self.config.get("metadata")))
-            except:
+            except Exception:
                 metadata.update(self.config.get("metadata"))
 
             record["metadata"] = metadata
@@ -65,7 +64,7 @@ class BatchSink(ApiSink, HotglueBatchSink):
 
             try:
                 metadata.update(json.loads(self.config.get("metadata")))
-            except:
+            except Exception:
                 metadata.update(self.config.get("metadata"))
 
             record["metadata"] = metadata
@@ -122,7 +121,7 @@ class BatchSink(ApiSink, HotglueBatchSink):
                 if inject_batch_ids:
                     state.update({"hgBatchId": batch_external_id})
                 self.update_state(state)
-                
+
     def handle_batch_response(self, id, batch_external_id=None) -> dict:
         state = {"id": id, "success": True}
         if batch_external_id:
