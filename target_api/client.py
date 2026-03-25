@@ -95,7 +95,7 @@ class ApiSink(HotglueBaseSink):
     def response_error_message(self, response: requests.Response) -> str:
         try:
             response_text = f" with response body: '{response.text}'"[:5000]
-        except:
+        except Exception:
             response_text = None
 
         request_url = response.request.url

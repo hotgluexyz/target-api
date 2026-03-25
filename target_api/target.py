@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from typing import Type, Optional
 import copy
-import os
 
 from singer_sdk import Sink
 from target_hotglue.target import TargetHotglue
