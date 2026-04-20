@@ -1015,8 +1015,8 @@ description = "`target-hotglue` is a Singer target for HotglueTarget, built with
 optional = false
 python-versions = "<3.11,>=3.7.1"
 files = [
-    {file = "target_hotglue-0.0.7-py3-none-any.whl", hash = "sha256:b7b92db0379fb297d2777ecc869689653394c878f6d1ec07cd2914021bdb8eae"},
-    {file = "target_hotglue-0.0.7.tar.gz", hash = "sha256:5b0e69debf00bdf195a2ffe05f0000b65cf0c97c27edf4e128ab1c9698e079b6"},
+    {file = "hotglue_singer_sdk-0.0.7-py3-none-any.whl", hash = "sha256:b7b92db0379fb297d2777ecc869689653394c878f6d1ec07cd2914021bdb8eae"},
+    {file = "hotglue_singer_sdk-0.0.7.tar.gz", hash = "sha256:5b0e69debf00bdf195a2ffe05f0000b65cf0c97c27edf4e128ab1c9698e079b6"},
 ]
 
 [package.dependencies]

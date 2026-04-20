@@ -5,7 +5,7 @@ from __future__ import annotations
 import io
 import json
 import pytest
-from singer_sdk.testing import target_sync_test
+from hotglue_singer_sdk.testing import target_sync_test
 
 import backoff._sync as backoff_sync
 import requests

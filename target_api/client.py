@@ -5,12 +5,12 @@ import os
 from sys import getsizeof
 
 from pydantic import BaseModel
-from target_hotglue.auth import ApiAuthenticator
-from target_hotglue.client import HotglueBaseSink
-from target_hotglue.common import HGJSONEncoder
+from hotglue_singer_sdk.target_sdk.auth import ApiAuthenticator
+from hotglue_singer_sdk.target_sdk.client import HotglueBaseSink
+from hotglue_singer_sdk.target_sdk.common import HGJSONEncoder
 import requests
 import urllib3
-from singer_sdk.exceptions import FatalAPIError, RetriableAPIError
+from hotglue_singer_sdk.exceptions import FatalAPIError, RetriableAPIError
 import backoff
 
 
