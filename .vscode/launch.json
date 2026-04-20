@@ -19,9 +19,6 @@
                 ">",
                 "state.json"
             ],
-            "env": {
-                "STREAMING_JOB": "True"
-            },
             "console": "integratedTerminal",
             "python": "${workspaceFolder}/.venv/bin/python"
         }
