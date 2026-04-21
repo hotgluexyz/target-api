@@ -5,13 +5,13 @@ from __future__ import annotations
 from typing import Type, Optional
 import copy
 
-from singer_sdk import Sink
-from target_hotglue.target import TargetHotglue
+from hotglue_singer_sdk import Sink
+from hotglue_singer_sdk.target_sdk.target import TargetHotglue
 
 from target_api.sinks import BatchSink, RecordSink
-from singer_sdk.helpers._compat import final
+from hotglue_singer_sdk.helpers._compat import final
 from collections import OrderedDict
-from target_hotglue.target_base import update_state
+from hotglue_singer_sdk.target_sdk.target_base import update_state
 
 
 class TargetApi(TargetHotglue):
@@ -26,7 +26,7 @@ class TargetApi(TargetHotglue):
     @property
     def MAX_PARALLELISM(self):
         # If we want to process sequentially we cannot use parallelism
-        # https://github.com/meltano/sdk/blob/main/singer_sdk/target_base.py#L521
+        # https://github.com/meltano/sdk/blob/main/hotglue_singer_sdk/target_base.py#L521
         if self.config.get("enforce_order"):
             return 1
 
@@ -103,7 +103,7 @@ class TargetApi(TargetHotglue):
 
         Args:
             is_endofpipe: This is passed by the
-                          :meth:`~singer_sdk.Sink._process_endofpipe()` which
+                          :meth:`~hotglue_singer_sdk.Sink._process_endofpipe()` which
                           is called after the target instance has finished
                           listening to the stdin
         """

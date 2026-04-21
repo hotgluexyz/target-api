@@ -4,7 +4,7 @@ from __future__ import annotations
 import json
 from typing import List
 
-from target_hotglue.client import HotglueBatchSink, HotglueSink
+from hotglue_singer_sdk.target_sdk.client import HotglueBatchSink, HotglueSink
 
 from target_api.client import ApiSink
 import os
