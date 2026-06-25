@@ -7,9 +7,20 @@ import copy
 
 from hotglue_singer_sdk import Sink
 from hotglue_singer_sdk.target_sdk.target import TargetHotglue
+from hotglue_singer_sdk.typing import (
+    ArrayType,
+    BooleanType,
+    IntegerType,
+    ObjectType,
+    PropertiesList,
+    Property,
+    StringType,
+)
 
 from target_api.sinks import BatchSink, RecordSink
 from hotglue_singer_sdk.helpers._compat import final
+from hotglue_singer_sdk.helpers._classproperty import classproperty
+from hotglue_singer_sdk.helpers.capabilities import CapabilitiesEnum, PluginCapabilities
 from collections import OrderedDict
 from hotglue_singer_sdk.target_sdk.target_base import update_state
 
@@ -19,9 +30,118 @@ class TargetApi(TargetHotglue):
 
     name = "target-api"
     SINK_TYPES = [RecordSink, BatchSink]
+    config_jsonschema = PropertiesList(
+        Property(
+            "url",
+            StringType,
+            required=True,
+            description=(
+                "API endpoint URL template. Supports placeholders: {stream}, "
+                "{tenant}, {tenant_id}, {flow}, {flow_id}, {tap}, {connector_id}."
+            ),
+        ),
+        Property(
+            "method",
+            StringType,
+            default="POST",
+            description="HTTP method to use when sending records to the API.",
+        ),
+        Property(
+            "auth",
+            BooleanType,
+            description="Enable API key authentication via the configured header.",
+        ),
+        Property(
+            "api_key",
+            StringType,
+            description="API key value sent in the authentication header.",
+        ),
+        Property(
+            "api_key_header",
+            StringType,
+            default="x-api-key",
+            description="HTTP header name used for API key authentication.",
+        ),
+        Property(
+            "api_key_url",
+            BooleanType,
+            description="Append the API key as a query parameter on the request URL.",
+        ),
+        Property(
+            "user_agent",
+            StringType,
+            default="target-api <hello@hotglue.xyz>",
+            description="User-Agent header value for API requests.",
+        ),
+        Property(
+            "custom_headers",
+            ArrayType(
+                ObjectType(
+                    Property("name", StringType),
+                    Property("value", StringType),
+                )
+            ),
+            description="Additional HTTP headers to include on each request.",
+        ),
+        Property(
+            "timeout",
+            IntegerType,
+            default=600,
+            description="Request timeout in seconds.",
+        ),
+        Property(
+            "process_as_batch",
+            BooleanType,
+            description="Send records in batches instead of one record per request.",
+        ),
+        Property(
+            "batch_size",
+            IntegerType,
+            default=100,
+            description="Maximum number of records per batch request.",
+        ),
+        Property(
+            "max_size_in_bytes",
+            IntegerType,
+            description="Maximum approximate batch payload size in bytes before flushing.",
+        ),
+        Property(
+            "inject_batch_ids",
+            BooleanType,
+            description="Add a unique hgBatchId field to each record in a batch.",
+        ),
+        Property(
+            "add_stream_key",
+            BooleanType,
+            description="Add the stream name as a stream field on each record.",
+        ),
+        Property(
+            "metadata",
+            StringType,
+            description="Metadata object (JSON string or object) merged into each record.",
+        ),
+        Property(
+            "enforce_order",
+            BooleanType,
+            description="Process sinks sequentially to preserve record order.",
+        ),
+        Property(
+            "post_empty_record",
+            BooleanType,
+            description="Post an empty record when a stream has a schema but no records.",
+        ),
+    ).to_dict()
     target_counter = {}
     batch_id_index = 0
     last_processed_sink = None
+
+    @classproperty
+    def capabilities(self) -> list[CapabilitiesEnum]:
+        """Expose only target-specific settings in --about output."""
+        return [
+            PluginCapabilities.ABOUT,
+            PluginCapabilities.HOTGLUE_EXCEPTIONS_CLASSES,
+        ]
 
     @property
     def MAX_PARALLELISM(self):
