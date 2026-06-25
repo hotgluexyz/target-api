@@ -28,15 +28,38 @@ pipx install git+https://github.com/ORG_NAME/target-api.git@main
 
 ### Accepted Config Options
 
-<!--
-Developer TODO: Provide a list of config options accepted by the target.
+#### Capabilities
 
-This section can be created by copy-pasting the CLI output from:
+* `about`
+* `stream-maps`
+* `schema-flattening`
+* `hotglue-exceptions-classes`
 
-```
-target-api --about --format=markdown
-```
--->
+#### Settings Accepted by Target
+
+| Setting             | Required | Default | Description |
+|:--------------------|:--------:|:-------:|:------------|
+| url                 | True     | None    | API endpoint URL template. Supports placeholders: {stream}, {tenant}, {tenant_id}, {flow}, {flow_id}, {tap}, {connector_id}. |
+| method              | False    | POST    | HTTP method to use when sending records to the API. |
+| auth                | False    | None    | Enable API key authentication via the configured header. |
+| api_key             | False    | None    | API key value sent in the authentication header. |
+| api_key_header      | False    | x-api-key | HTTP header name used for API key authentication. |
+| api_key_url         | False    | None    | Append the API key as a query parameter on the request URL. |
+| user_agent          | False    | target-api <hello@hotglue.xyz> | User-Agent header value for API requests. |
+| custom_headers      | False    | None    | Additional HTTP headers to include on each request. |
+| timeout             | False    |     600 | Request timeout in seconds. |
+| process_as_batch    | False    | None    | Send records in batches instead of one record per request. |
+| batch_size          | False    |     100 | Maximum number of records per batch request. |
+| max_size_in_bytes   | False    | None    | Maximum approximate batch payload size in bytes before flushing. |
+| inject_batch_ids    | False    | None    | Add a unique hgBatchId field to each record in a batch. |
+| add_stream_key      | False    | None    | Add the stream name as a stream field on each record. |
+| metadata            | False    | None    | Metadata object (JSON string or object) merged into each record. |
+| enforce_order       | False    | None    | Process sinks sequentially to preserve record order. |
+| post_empty_record   | False    | None    | Post an empty record when a stream has a schema but no records. |
+| stream_maps         | False    | None    | Config object for stream maps capability. For more information check out [Stream Maps](https://sdk.meltano.com/en/latest/stream_maps.html). |
+| stream_map_config   | False    | None    | User-defined config values to be used within map expressions. |
+| flattening_enabled  | False    | None    | 'True' to enable schema flattening and automatically expand nested properties. |
+| flattening_max_depth| False    | None    | The max depth to flatten schemas. |
 
 A full list of supported settings and capabilities for this
 target is available by running:
