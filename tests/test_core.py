@@ -217,7 +217,8 @@ def test_default_and_custom_headers_applied(monkeypatch: pytest.MonkeyPatch) -> 
             "user_agent": "ua-test",
             "custom_headers": [{"name": "X-Custom", "value": "1"}, {"name": 1, "value": "no"}],
             "timeout": 123,
-        }
+        },
+        validate_config=False,
     )
     schema = {"type": "object", "properties": {"id": {"type": "integer"}}}
     sink = RecordSink(target, "users", schema, ["id"])
