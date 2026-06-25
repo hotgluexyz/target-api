@@ -11,7 +11,6 @@ from hotglue_singer_sdk.target_sdk.target import TargetHotglue
 
 from target_api.sinks import BatchSink, RecordSink
 from hotglue_singer_sdk.helpers._compat import final
-from hotglue_singer_sdk.helpers._classproperty import classproperty
 from collections import OrderedDict
 from hotglue_singer_sdk.target_sdk.target_base import update_state
 
