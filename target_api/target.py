@@ -6,6 +6,7 @@ from typing import Type, Optional
 import copy
 
 from hotglue_singer_sdk import Sink
+from hotglue_singer_sdk import typing as th
 from hotglue_singer_sdk.target_sdk.target import TargetHotglue
 
 from target_api.sinks import BatchSink, RecordSink
@@ -19,9 +20,111 @@ class TargetApi(TargetHotglue):
 
     name = "target-api"
     SINK_TYPES = [RecordSink, BatchSink]
+    config_jsonschema = th.PropertiesList(
+        th.Property(
+            "url",
+            th.StringType,
+            required=True,
+            description=(
+                "API endpoint URL template. Supports placeholders: {stream}, "
+                "{tenant}, {tenant_id}, {flow}, {flow_id}, {tap}, {connector_id}."
+            ),
+        ),
+        th.Property(
+            "method",
+            th.StringType,
+            default="POST",
+            description="HTTP method to use when sending records to the API.",
+        ),
+        th.Property(
+            "auth",
+            th.BooleanType,
+            description="Enable API key authentication via the configured header.",
+        ),
+        th.Property(
+            "api_key",
+            th.StringType,
+            description="API key value sent in the authentication header.",
+        ),
+        th.Property(
+            "api_key_header",
+            th.StringType,
+            default="x-api-key",
+            description="HTTP header name used for API key authentication.",
+        ),
+        th.Property(
+            "api_key_url",
+            th.BooleanType,
+            description="Append the API key as a query parameter on the request URL.",
+        ),
+        th.Property(
+            "user_agent",
+            th.StringType,
+            default="target-api <hello@hotglue.xyz>",
+            description="User-Agent header value for API requests.",
+        ),
+        th.Property(
+            "custom_headers",
+            th.ArrayType(
+                th.ObjectType(
+                    th.Property("name", th.StringType),
+                    th.Property("value", th.StringType),
+                )
+            ),
+            description="Additional HTTP headers to include on each request.",
+        ),
+        th.Property(
+            "timeout",
+            th.IntegerType,
+            default=600,
+            description="Request timeout in seconds.",
+        ),
+        th.Property(
+            "process_as_batch",
+            th.BooleanType,
+            description="Send records in batches instead of one record per request.",
+        ),
+        th.Property(
+            "batch_size",
+            th.IntegerType,
+            default=100,
+            description="Maximum number of records per batch request.",
+        ),
+        th.Property(
+            "max_size_in_bytes",
+            th.IntegerType,
+            description="Maximum approximate batch payload size in bytes before flushing.",
+        ),
+        th.Property(
+            "inject_batch_ids",
+            th.BooleanType,
+            description="Add a unique hgBatchId field to each record in a batch.",
+        ),
+        th.Property(
+            "add_stream_key",
+            th.BooleanType,
+            description="Add the stream name as a stream field on each record.",
+        ),
+        th.Property(
+            "metadata",
+            th.StringType,
+            description="Metadata object (JSON string or object) merged into each record.",
+        ),
+        th.Property(
+            "enforce_order",
+            th.BooleanType,
+            description="Process sinks sequentially to preserve record order.",
+        ),
+        th.Property(
+            "post_empty_record",
+            th.BooleanType,
+            description="Post an empty record when a stream has a schema but no records.",
+        ),
+    ).to_dict()
     target_counter = {}
     batch_id_index = 0
     last_processed_sink = None
+
 
     @property
     def MAX_PARALLELISM(self):

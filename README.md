@@ -28,15 +28,32 @@ pipx install git+https://github.com/ORG_NAME/target-api.git@main
 
 ### Accepted Config Options
 
-<!--
-Developer TODO: Provide a list of config options accepted by the target.
+#### Capabilities
 
-This section can be created by copy-pasting the CLI output from:
+* `about`
+* `hotglue-exceptions-classes`
 
-```
-target-api --about --format=markdown
-```
--->
+#### Settings
+
+| Setting          | Required | Default | Description |
+|:-----------------|:--------:|:-------:|:------------|
+| url              | True     | None    | API endpoint URL template. Supports placeholders: {stream}, {tenant}, {tenant_id}, {flow}, {flow_id}, {tap}, {connector_id}. |
+| method           | False    | POST    | HTTP method to use when sending records to the API. |
+| auth             | False    | None    | Enable API key authentication via the configured header. |
+| api_key          | False    | None    | API key value sent in the authentication header. |
+| api_key_header   | False    | x-api-key | HTTP header name used for API key authentication. |
+| api_key_url      | False    | None    | Append the API key as a query parameter on the request URL. |
+| user_agent       | False    | target-api <hello@hotglue.xyz> | User-Agent header value for API requests. |
+| custom_headers   | False    | None    | Additional HTTP headers to include on each request. |
+| timeout          | False    |     600 | Request timeout in seconds. |
+| process_as_batch | False    | None    | Send records in batches instead of one record per request. |
+| batch_size       | False    |     100 | Maximum number of records per batch request. |
+| max_size_in_bytes| False    | None    | Maximum approximate batch payload size in bytes before flushing. |
+| inject_batch_ids | False    | None    | Add a unique hgBatchId field to each record in a batch. |
+| add_stream_key   | False    | None    | Add the stream name as a stream field on each record. |
+| metadata         | False    | None    | Metadata object (JSON string or object) merged into each record. |
+| enforce_order    | False    | None    | Process sinks sequentially to preserve record order. |
+| post_empty_record| False    | None    | Post an empty record when a stream has a schema but no records. |
 
 A full list of supported settings and capabilities for this
 target is available by running:
